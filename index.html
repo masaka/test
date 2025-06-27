@@ -1,0 +1,1774 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>麻雀点数・符計算アプリ【フル機能版】</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+```
+    body {
+        font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 10px;
+    }
+
+    .container {
+        max-width: 1600px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    .header {
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        color: white;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .header h1 {
+        font-size: 2.2em;
+        margin-bottom: 8px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .main-content {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .input-section, .result-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 15px;
+        border: 1px solid #e9ecef;
+    }
+
+    .section-title {
+        font-size: 1.3em;
+        margin-bottom: 15px;
+        color: #333;
+        border-bottom: 3px solid #4ECDC4;
+        padding-bottom: 8px;
+    }
+
+    .tile-selector {
+        margin-bottom: 20px;
+    }
+
+    .tile-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+        gap: 5px;
+        margin: 10px 0;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+    }
+
+    .tile {
+        width: 40px;
+        height: 55px;
+        background: linear-gradient(145deg, #ffffff, #f0f0f0);
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+        position: relative;
+    }
+
+    .tile:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        border-color: #4ECDC4;
+    }
+
+    .tile.manzu { color: #e74c3c; }
+    .tile.pinzu { color: #3498db; }
+    .tile.souzu { color: #27ae60; }
+    .tile.jihai { color: #8e44ad; }
+
+    .hand-display {
+        margin: 0 0 15px 0;
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        border: 2px solid #4ECDC4;
+        border-radius: 0 0 12px 12px;
+        padding: 15px;
+        z-index: 1000;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        backdrop-filter: blur(10px);
+    }
+
+    .hand-display h3 {
+        margin-bottom: 10px;
+        color: #333;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .hand-display h3::before {
+        content: "🀄";
+        margin-right: 8px;
+    }
+
+    .hand-status {
+        font-size: 12px;
+        color: #666;
+        background: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+        transition: all 0.3s ease;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .hand-tiles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-height: 60px;
+        padding: 10px;
+        background: white;
+        border-radius: 8px;
+        border: 2px dashed #ddd;
+        align-items: center;
+    }
+
+    .hand-tile {
+        width: 35px;
+        height: 50px;
+        background: linear-gradient(145deg, #ffffff, #f0f0f0);
+        border: 2px solid #ddd;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: bold;
+        position: relative;
+        cursor: pointer;
+    }
+
+    .hand-tile:hover {
+        border-color: #e74c3c;
+    }
+
+    .hand-tile.winning-tile {
+        border-color: #e74c3c;
+        background: linear-gradient(145deg, #fff5f5, #ffe6e6);
+    }
+
+    .winning-tile::after {
+        content: "🎯";
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        font-size: 10px;
+    }
+
+    .game-settings {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin: 15px 0;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+        font-size: 14px;
+    }
+
+    .form-group select, .form-group input {
+        width: 100%;
+        padding: 8px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+
+    .form-group select:focus, .form-group input:focus {
+        outline: none;
+        border-color: #4ECDC4;
+    }
+
+    .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin: 15px 0;
+    }
+
+    .btn {
+        padding: 8px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary {
+        background: linear-gradient(45deg, #4ECDC4, #44a08d);
+        color: white;
+    }
+
+    .btn-secondary {
+        background: linear-gradient(45deg, #FF6B6B, #ee5a24);
+        color: white;
+    }
+
+    .btn-info {
+        background: linear-gradient(45deg, #74b9ff, #0984e3);
+        color: white;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .calculate-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: transform 0.3s;
+        margin-top: 15px;
+    }
+
+    .calculate-btn:hover {
+        transform: translateY(-3px);
+    }
+
+    .result-display {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 5px solid #4ECDC4;
+    }
+
+    .score-display {
+        font-size: 2em;
+        color: #FF6B6B;
+        font-weight: bold;
+        text-align: center;
+        margin: 15px 0;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .details {
+        margin-top: 10px;
+    }
+
+    .details div {
+        margin-bottom: 6px;
+        padding: 6px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-size: 13px;
+    }
+
+    .fu-breakdown {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 12px;
+        border-radius: 6px;
+        margin: 10px 0;
+    }
+
+    .fu-breakdown h4 {
+        color: #856404;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .fu-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+        border-bottom: 1px solid #f1c40f;
+        font-size: 12px;
+    }
+
+    .fu-item:last-child {
+        border-bottom: none;
+        font-weight: bold;
+        color: #e67e22;
+    }
+
+    .error {
+        color: #dc3545;
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 6px;
+        margin-top: 10px;
+        font-size: 13px;
+    }
+
+    .hand-analysis {
+        background: #e8f5e8;
+        border: 1px solid #c3e6c3;
+        padding: 12px;
+        border-radius: 6px;
+        margin: 10px 0;
+    }
+
+    .hand-analysis h4 {
+        color: #155724;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .meld {
+        display: inline-block;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 3px 6px;
+        margin: 2px;
+        font-size: 11px;
+    }
+
+    .yaku-list {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 12px;
+        border-radius: 6px;
+        margin: 10px 0;
+    }
+
+    .yaku-list h4 {
+        color: #155724;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .yaku-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 2px 0;
+        font-size: 12px;
+    }
+
+    .naki-settings {
+        background: #fff;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px;
+        margin: 10px 0;
+        position: sticky;
+        top: 120px;
+        z-index: 900;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .naki-buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 5px;
+        margin-top: 8px;
+    }
+
+    .naki-display {
+        min-height: 40px;
+        background: #f8f9fa;
+        border: 1px dashed #ddd;
+        border-radius: 4px;
+        padding: 5px;
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .naki-meld {
+        background: #fff;
+        border: 1px solid #007bff;
+        border-radius: 4px;
+        padding: 3px 6px;
+        font-size: 11px;
+        color: #007bff;
+    }
+
+    @media (max-width: 1200px) {
+        .main-content {
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        .hand-display {
+            position: sticky;
+            top: 0;
+            margin: 0 -15px 15px -15px;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+        }
+        
+        .naki-settings {
+            position: sticky;
+            top: 100px;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .header h1 {
+            font-size: 1.8em;
+        }
+
+        .tile-grid {
+            grid-template-columns: repeat(auto-fit, minmax(35px, 1fr));
+        }
+
+        .tile {
+            width: 35px;
+            height: 48px;
+            font-size: 16px;
+        }
+
+        .game-settings {
+            grid-template-columns: 1fr;
+        }
+        
+        .hand-display {
+            position: sticky;
+            top: 0;
+            padding: 10px 15px;
+            margin: 0 -10px 15px -10px;
+            border-radius: 0;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+        }
+        
+        .hand-display h3 {
+            font-size: 14px;
+        }
+        
+        .hand-status {
+            font-size: 10px;
+        }
+        
+        .naki-settings {
+            position: sticky;
+            top: 80px;
+        }
+    }
+</style>
+```
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🀄 麻雀点数・符計算アプリ【フル機能版】</h1>
+            <p>完全な役判定・符計算・点数計算システム</p>
+        </div>
+
+```
+    <div class="main-content">
+        <div class="input-section">
+            <h2 class="section-title">🀄 牌選択</h2>
+            
+            <div class="tile-selector">
+                <h3 style="font-size: 14px; margin: 10px 0 5px 0;">萬子（マンズ）</h3>
+                <div class="tile-grid" id="manzuGrid"></div>
+                
+                <h3 style="font-size: 14px; margin: 10px 0 5px 0;">筒子（ピンズ）</h3>
+                <div class="tile-grid" id="pinzuGrid"></div>
+                
+                <h3 style="font-size: 14px; margin: 10px 0 5px 0;">索子（ソーズ）</h3>
+                <div class="tile-grid" id="souzuGrid"></div>
+                
+                <h3 style="font-size: 14px; margin: 10px 0 5px 0;">字牌</h3>
+                <div class="tile-grid" id="jihaiGrid"></div>
+            </div>
+
+            <div class="hand-display">
+                <h3>
+                    手牌 
+                    <span class="hand-status">
+                        <span id="handCount">0</span>/14枚
+                        <span id="winningTileStatus"></span>
+                    </span>
+                </h3>
+                <div class="hand-tiles" id="handTiles"></div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="clearHand()">クリア</button>
+                <button class="btn btn-primary" onclick="setWinningTile()">アガリ牌</button>
+                <button class="btn btn-info" onclick="sortHand()">整列</button>
+            </div>
+
+            <div class="naki-settings">
+                <h4 style="font-size: 14px; margin-bottom: 8px;">🀄 鳴き設定 <span id="nakiCount" style="font-size: 12px; color: #666;"></span></h4>
+                <div class="naki-buttons">
+                    <button class="btn btn-info" onclick="addNaki('pon')">ポン</button>
+                    <button class="btn btn-info" onclick="addNaki('chi')">チー</button>
+                    <button class="btn btn-info" onclick="addNaki('kan')">カン</button>
+                </div>
+                <div class="naki-display" id="nakiDisplay"></div>
+            </div>
+
+            <div class="game-settings">
+                <div class="form-group">
+                    <label for="position">親/子</label>
+                    <select id="position">
+                        <option value="ko">子</option>
+                        <option value="oya">親</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="winType">あがり方</label>
+                    <select id="winType">
+                        <option value="tsumo">ツモ</option>
+                        <option value="ron">ロン</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="bakaze">場風</label>
+                    <select id="bakaze">
+                        <option value="1z">東場</option>
+                        <option value="2z">南場</option>
+                        <option value="3z">西場</option>
+                        <option value="4z">北場</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="jikaze">自風</label>
+                    <select id="jikaze">
+                        <option value="1z">東家</option>
+                        <option value="2z">南家</option>
+                        <option value="3z">西家</option>
+                        <option value="4z">北家</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="dora">ドラ数</label>
+                    <input type="number" id="dora" min="0" max="20" value="0">
+                </div>
+
+                <div class="form-group">
+                    <label for="uradora">裏ドラ数</label>
+                    <input type="number" id="uradora" min="0" max="20" value="0">
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <label style="display: flex; align-items: center; font-size: 13px;">
+                    <input type="checkbox" id="riichi" style="margin-right: 5px;">
+                    リーチ
+                </label>
+                <label style="display: flex; align-items: center; font-size: 13px;">
+                    <input type="checkbox" id="ippatsu" style="margin-right: 5px;">
+                    一発
+                </label>
+                <label style="display: flex; align-items: center; font-size: 13px;">
+                    <input type="checkbox" id="haitei" style="margin-right: 5px;">
+                    海底/河底
+                </label>
+                <label style="display: flex; align-items: center; font-size: 13px;">
+                    <input type="checkbox" id="rinshan" style="margin-right: 5px;">
+                    嶺上開花
+                </label>
+            </div>
+
+            <button class="calculate-btn" onclick="calculateAll()">
+                🧮 符・点数・役を計算する
+            </button>
+        </div>
+
+        <div class="result-section">
+            <h2 class="section-title">📊 計算結果</h2>
+            <div class="result-display" id="resultDisplay">
+                <div style="text-align: center; color: #666; padding: 30px; font-size: 13px;">
+                    手牌を14枚設定して<br>
+                    「符・点数・役を計算する」<br>
+                    ボタンを押してください
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 牌のデータ
+    const tileData = {
+        manzu: ['1m', '2m', '3m', '4m', '5m', '6m', '7m', '8m', '9m'],
+        pinzu: ['1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p'],
+        souzu: ['1s', '2s', '3s', '4s', '5s', '6s', '7s', '8s', '9s'],
+        jihai: ['1z', '2z', '3z', '4z', '5z', '6z', '7z']
+    };
+
+    const tileNames = {
+        '1m': '1萬', '2m': '2萬', '3m': '3萬', '4m': '4萬', '5m': '5萬', '6m': '6萬', '7m': '7萬', '8m': '8萬', '9m': '9萬',
+        '1p': '1筒', '2p': '2筒', '3p': '3筒', '4p': '4筒', '5p': '5筒', '6p': '6筒', '7p': '7筒', '8p': '8筒', '9p': '9筒',
+        '1s': '1索', '2s': '2索', '3s': '3索', '4s': '4索', '5s': '5索', '6s': '6索', '7s': '7索', '8s': '8索', '9s': '9索',
+        '1z': '東', '2z': '南', '3z': '西', '4z': '北', '5z': '白', '6z': '発', '7z': '中'
+    };
+
+    let hand = [];
+    let winningTile = null;
+    let nakiMelds = [];
+
+    // 完全な点数表
+    const scoreTable = {
+        1: {
+            30: [1000, 500, 300, 1500, 500],
+            40: [1300, 700, 400, 2000, 700],
+            50: [1600, 800, 400, 2400, 800],
+            60: [2000, 1000, 500, 3000, 1000],
+            70: [2300, 1200, 600, 3400, 1200],
+            80: [2600, 1300, 700, 3900, 1300],
+            90: [2900, 1500, 800, 4400, 1500],
+            100: [3200, 1600, 800, 4800, 1600],
+            110: [3600, 1800, 900, 5300, 1800]
+        },
+        2: {
+            25: [1600, 800, 400, 2400, 800], // 七対子
+            30: [2000, 1000, 500, 3000, 1000],
+            40: [2600, 1300, 700, 3900, 1300],
+            50: [3200, 1600, 800, 4800, 1600],
+            60: [3900, 2000, 1000, 5800, 2000],
+            70: [4500, 2300, 1200, 6800, 2300],
+            80: [5200, 2600, 1300, 7700, 2600],
+            90: [5800, 2900, 1500, 8700, 2900],
+            100: [6400, 3200, 1600, 9600, 3200],
+            110: [7100, 3600, 1800, 10600, 3600]
+        },
+        3: {
+            25: [3200, 1600, 800, 4800, 1600], // 七対子
+            30: [3900, 2000, 1000, 5800, 2000],
+            40: [5200, 2600, 1300, 7700, 2600],
+            50: [6400, 3200, 1600, 9600, 3200],
+            60: [7700, 3900, 2000, 11600, 3900],
+            70: [8000, 4000, 2000, 12000, 4000] // 満貫切り上げ
+        },
+        4: {
+            25: [6400, 3200, 1600, 9600, 3200], // 七対子
+            30: [7700, 3900, 2000, 11600, 3900],
+            40: [8000, 4000, 2000, 12000, 4000] // 満貫切り上げ
+        },
+        5: {
+            30: [8000, 4000, 2000, 12000, 4000] // 満貫
+        }
+    };
+
+    // 満貫以上の点数
+    const specialScores = {
+        mangan: [8000, 4000, 2000, 12000, 4000],      // 満貫
+        haneman: [12000, 6000, 3000, 18000, 6000],    // 跳満
+        baiman: [16000, 8000, 4000, 24000, 8000],     // 倍満
+        sanbaiman: [24000, 12000, 6000, 36000, 12000], // 三倍満
+        yakuman: [32000, 16000, 8000, 48000, 16000]   // 役満
+    };
+
+    // 牌選択グリッドの生成
+    function generateTileGrids() {
+        Object.entries(tileData).forEach(([suit, tiles]) => {
+            const grid = document.getElementById(suit + 'Grid');
+            grid.innerHTML = '';
+            
+            tiles.forEach(tile => {
+                const tileElement = document.createElement('div');
+                tileElement.className = `tile ${suit}`;
+                tileElement.textContent = tileNames[tile];
+                tileElement.onclick = () => addTileToHand(tile);
+                grid.appendChild(tileElement);
+            });
+        });
+    }
+
+    // 手牌に牌を追加
+    function addTileToHand(tile) {
+        if (hand.length >= 14) {
+            alert('手牌は14枚までです');
+            return;
+        }
+        
+        hand.push(tile);
+        updateHandDisplay();
+    }
+
+    // 手牌表示の更新
+    function updateHandDisplay() {
+        const handTiles = document.getElementById('handTiles');
+        const handCount = document.getElementById('handCount');
+        const winningTileStatus = document.getElementById('winningTileStatus');
+        
+        handTiles.innerHTML = '';
+        handCount.textContent = hand.length;
+        
+        // アガリ牌の状態表示
+        if (winningTile) {
+            winningTileStatus.textContent = ` | アガリ牌: ${tileNames[winningTile]}`;
+            winningTileStatus.style.color = '#e74c3c';
+        } else {
+            winningTileStatus.textContent = '';
+        }
+
+        hand.forEach((tile, index) => {
+            const tileElement = document.createElement('div');
+            tileElement.className = 'hand-tile';
+            if (tile === winningTile) {
+                tileElement.classList.add('winning-tile');
+            }
+            tileElement.textContent = tileNames[tile];
+            tileElement.onclick = () => removeTileFromHand(index);
+            
+            // 字牌の色分け
+            if (tile.endsWith('m')) tileElement.style.color = '#e74c3c';
+            else if (tile.endsWith('p')) tileElement.style.color = '#3498db';
+            else if (tile.endsWith('s')) tileElement.style.color = '#27ae60';
+            else if (tile.endsWith('z')) tileElement.style.color = '#8e44ad';
+            
+            handTiles.appendChild(tileElement);
+        });
+    }
+
+    // 手牌から牌を削除
+    function removeTileFromHand(index) {
+        if (hand[index] === winningTile) {
+            winningTile = null;
+        }
+        hand.splice(index, 1);
+        updateHandDisplay();
+    }
+
+    // 手牌をクリア
+    function clearHand() {
+        hand = [];
+        winningTile = null;
+        nakiMelds = [];
+        updateHandDisplay();
+        updateNakiDisplay();
+    }
+
+    // 手牌整列
+    function sortHand() {
+        hand.sort((a, b) => {
+            const getOrder = (tile) => {
+                if (tile.endsWith('m')) return parseInt(tile) + 0;
+                if (tile.endsWith('p')) return parseInt(tile) + 10;
+                if (tile.endsWith('s')) return parseInt(tile) + 20;
+                if (tile.endsWith('z')) return parseInt(tile) + 30;
+                return 100;
+            };
+            return getOrder(a) - getOrder(b);
+        });
+        updateHandDisplay();
+    }
+
+    // アガリ牌設定
+    function setWinningTile() {
+        if (hand.length === 0) {
+            alert('まず手牌を設定してください');
+            return;
+        }
+        
+        // 最後の牌をアガリ牌に設定
+        const lastTile = hand[hand.length - 1];
+        winningTile = lastTile;
+        updateHandDisplay();
+        
+        // 成功メッセージ
+        const statusElement = document.getElementById('winningTileStatus');
+        if (statusElement) {
+            statusElement.style.animation = 'none';
+            setTimeout(() => {
+                statusElement.style.animation = 'pulse 0.5s ease-in-out';
+            }, 10);
+        }
+    }
+
+    // 鳴き追加
+    function addNaki(type) {
+        const selectedTiles = hand.slice(-3); // 最後の3枚を選択
+        if (selectedTiles.length < 3) {
+            alert('鳴きには3枚以上の牌が必要です');
+            return;
+        }
+        
+        const meld = {
+            type: type,
+            tiles: selectedTiles,
+            display: `${type}:${selectedTiles.map(t => tileNames[t]).join('')}`
+        };
+        
+        nakiMelds.push(meld);
+        
+        // 手牌から該当牌を削除
+        selectedTiles.forEach(tile => {
+            const index = hand.indexOf(tile);
+            if (index > -1) hand.splice(index, 1);
+        });
+        
+        updateHandDisplay();
+        updateNakiDisplay();
+    }
+
+    // 鳴き表示更新
+    function updateNakiDisplay() {
+        const nakiDisplay = document.getElementById('nakiDisplay');
+        const nakiCount = document.getElementById('nakiCount');
+        nakiDisplay.innerHTML = '';
+        
+        if (nakiMelds.length > 0) {
+            nakiCount.textContent = `(${nakiMelds.length}組)`;
+        } else {
+            nakiCount.textContent = '';
+        }
+        
+        nakiMelds.forEach((meld, index) => {
+            const meldElement = document.createElement('div');
+            meldElement.className = 'naki-meld';
+            meldElement.textContent = meld.display;
+            meldElement.onclick = () => removeNaki(index);
+            meldElement.title = 'クリックで削除';
+            nakiDisplay.appendChild(meldElement);
+        });
+    }
+
+    // 鳴き削除
+    function removeNaki(index) {
+        const meld = nakiMelds[index];
+        hand.push(...meld.tiles);
+        nakiMelds.splice(index, 1);
+        updateHandDisplay();
+        updateNakiDisplay();
+    }
+
+    // 高度な面子解析
+    function analyzeMeldsAdvanced(tiles) {
+        const tileCounts = {};
+        tiles.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+
+        const pairs = [];
+        const triplets = [];
+        const sequences = [];
+
+        // 対子・刻子の検出
+        Object.entries(tileCounts).forEach(([tile, count]) => {
+            if (count >= 2) {
+                pairs.push({ type: 'pair', tile: tile, count: Math.floor(count / 2) });
+            }
+            if (count >= 3) {
+                triplets.push({ type: 'triplet', tile: tile, count: Math.floor(count / 3) });
+            }
+        });
+
+        // 順子の検出（簡易版）
+        ['m', 'p', 's'].forEach(suit => {
+            for (let i = 1; i <= 7; i++) {
+                const tile1 = i + suit;
+                const tile2 = (i + 1) + suit;
+                const tile3 = (i + 2) + suit;
+                
+                if (tileCounts[tile1] && tileCounts[tile2] && tileCounts[tile3]) {
+                    const count = Math.min(tileCounts[tile1], tileCounts[tile2], tileCounts[tile3]);
+                    if (count > 0) {
+                        sequences.push({
+                            type: 'sequence',
+                            tiles: [tile1, tile2, tile3],
+                            count: count
+                        });
+                    }
+                }
+            }
+        });
+
+        return { pairs, triplets, sequences, tileCounts };
+    }
+
+    // 役の完全判定
+    function detectYakuComplete(hand, winningTile, winType, nakiMelds, settings) {
+        const detectedYaku = [];
+        const analysis = analyzeMeldsAdvanced(hand);
+        const { bakaze, jikaze, riichi, ippatsu, haitei, rinshan } = settings;
+        const hasNaki = nakiMelds.length > 0;
+
+        // 特殊条件役
+        if (riichi) detectedYaku.push({ name: 'リーチ', han: 1 });
+        if (ippatsu && riichi) detectedYaku.push({ name: '一発', han: 1 });
+        if (haitei) detectedYaku.push({ name: '海底摸月/河底撈魚', han: 1 });
+        if (rinshan) detectedYaku.push({ name: '嶺上開花', han: 1 });
+
+        // ツモ役
+        if (winType === 'tsumo') {
+            detectedYaku.push({ name: 'ツモ', han: 1 });
+        }
+
+        // 役満の判定
+        if (isKokushi(hand)) {
+            detectedYaku.push({ name: '国士無双', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isChiitoi(hand)) {
+            detectedYaku.push({ name: '七対子', han: 2 });
+            return detectedYaku;
+        }
+
+        if (isSuuankou(hand, winningTile, winType)) {
+            detectedYaku.push({ name: '四暗刻', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isDaisangen(hand)) {
+            detectedYaku.push({ name: '大三元', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isSuushiihou(hand)) {
+            detectedYaku.push({ name: '大四喜', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isShousuushii(hand)) {
+            detectedYaku.push({ name: '小四喜', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isChinroutou(hand)) {
+            detectedYaku.push({ name: '清老頭', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isRyuuiisou(hand)) {
+            detectedYaku.push({ name: '緑一色', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isChuuren(hand)) {
+            detectedYaku.push({ name: '九蓮宝燈', han: 13 });
+            return detectedYaku;
+        }
+
+        if (isSuukantsu(hand, nakiMelds)) {
+            detectedYaku.push({ name: '四槓子', han: 13 });
+            return detectedYaku;
+        }
+
+        // 通常役の判定
+        const tileCounts = analysis.tileCounts;
+        const melds = findAllMelds(hand);
+
+        // 役牌
+        Object.entries(tileCounts).forEach(([tile, count]) => {
+            if (count >= 3 && tile.endsWith('z')) {
+                const jihaiNum = parseInt(tile);
+                if (jihaiNum >= 5) { // 三元牌
+                    const yakuhaiNames = { '5z': '白', '6z': '発', '7z': '中' };
+                    detectedYaku.push({ name: `役牌(${yakuhaiNames[tile]})`, han: 1 });
+                }
+                if (tile === bakaze) { // 場風
+                    detectedYaku.push({ name: '場風', han: 1 });
+                }
+                if (tile === jikaze) { // 自風
+                    detectedYaku.push({ name: '自風', han: 1 });
+                }
+            }
+        });
+
+        // 小三元
+        if (isShousangen(hand)) {
+            detectedYaku.push({ name: '小三元', han: 2 });
+        }
+
+        // 対々和
+        const tripletCount = Object.values(tileCounts).filter(count => count >= 3).length;
+        if (tripletCount === 4) {
+            detectedYaku.push({ name: '対々和', han: 2 });
+        }
+
+        // 三暗刻
+        if (isSanankou(hand, winningTile, winType, hasNaki)) {
+            detectedYaku.push({ name: '三暗刻', han: 2 });
+        }
+
+        // 三色同刻
+        if (isSanshokudoukou(hand)) {
+            detectedYaku.push({ name: '三色同刻', han: 2 });
+        }
+
+        // 三槓子
+        if (isSankantsu(hand, nakiMelds)) {
+            detectedYaku.push({ name: '三槓子', han: 2 });
+        }
+
+        // 混老頭
+        if (isHonroutou(hand)) {
+            detectedYaku.push({ name: '混老頭', han: 2 });
+        }
+
+        // 混一色・清一色
+        const suits = new Set(hand.map(tile => tile.slice(-1)));
+        if (suits.size === 1) {
+            if (suits.has('z')) {
+                detectedYaku.push({ name: '字一色', han: 13 });
+                return detectedYaku;
+            } else {
+                const hanValue = hasNaki ? 5 : 6;
+                detectedYaku.push({ name: '清一色', han: hanValue });
+            }
+        } else if (suits.size === 2 && suits.has('z')) {
+            const hanValue = hasNaki ? 2 : 3;
+            detectedYaku.push({ name: '混一色', han: hanValue });
+        }
+
+        // 混全帯么九・純全帯么九
+        if (isJunchanta(hand, melds)) {
+            const hanValue = hasNaki ? 2 : 3;
+            detectedYaku.push({ name: '純全帯么九', han: hanValue });
+        } else if (isChanta(hand, melds)) {
+            const hanValue = hasNaki ? 1 : 2;
+            detectedYaku.push({ name: '混全帯么九', han: hanValue });
+        }
+
+        // 二盃口（一盃口より先に判定）
+        if (isRyanpeikou(hand) && !hasNaki) {
+            detectedYaku.push({ name: '二盃口', han: 3 });
+        } else if (isIipeikou(hand) && !hasNaki) {
+            detectedYaku.push({ name: '一盃口', han: 1 });
+        }
+
+        // 三色同順
+        if (isSanshoku(hand, melds)) {
+            const hanValue = hasNaki ? 1 : 2;
+            detectedYaku.push({ name: '三色同順', han: hanValue });
+        }
+
+        // 一気通貫
+        if (isIttsu(hand, melds)) {
+            const hanValue = hasNaki ? 1 : 2;
+            detectedYaku.push({ name: '一気通貫', han: hanValue });
+        }
+
+        // タンヤオ
+        if (isTanyao(hand)) {
+            detectedYaku.push({ name: 'タンヤオ', han: 1 });
+        }
+
+        // ピンフ
+        if (isPinfu(hand, winningTile, melds) && !hasNaki) {
+            detectedYaku.push({ name: 'ピンフ', han: 1 });
+        }
+
+        return detectedYaku;
+    }
+
+    // 役判定補助関数
+    function findAllMelds(hand) {
+        const sequences = [];
+        const triplets = [];
+        const pairs = [];
+        
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+
+        // 刻子・槓子の検出
+        Object.entries(tileCounts).forEach(([tile, count]) => {
+            if (count >= 3) {
+                triplets.push({ type: 'triplet', tile: tile, tiles: Array(3).fill(tile) });
+            }
+            if (count >= 2) {
+                pairs.push({ type: 'pair', tile: tile, tiles: Array(2).fill(tile) });
+            }
+        });
+
+        // 順子の検出
+        ['m', 'p', 's'].forEach(suit => {
+            for (let i = 1; i <= 7; i++) {
+                const tile1 = i + suit;
+                const tile2 = (i + 1) + suit;
+                const tile3 = (i + 2) + suit;
+                
+                if (tileCounts[tile1] && tileCounts[tile2] && tileCounts[tile3]) {
+                    const count = Math.min(tileCounts[tile1] || 0, tileCounts[tile2] || 0, tileCounts[tile3] || 0);
+                    for (let j = 0; j < count; j++) {
+                        sequences.push({
+                            type: 'sequence',
+                            tiles: [tile1, tile2, tile3],
+                            suit: suit,
+                            start: i
+                        });
+                    }
+                }
+            }
+        });
+
+        return { sequences, triplets, pairs };
+    }
+
+    function isKokushi(hand) {
+        const requiredTiles = ['1m', '9m', '1p', '9p', '1s', '9s', '1z', '2z', '3z', '4z', '5z', '6z', '7z'];
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        let pairFound = false;
+        for (const tile of requiredTiles) {
+            const count = tileCounts[tile] || 0;
+            if (count === 0) return false;
+            if (count === 2) {
+                if (pairFound) return false;
+                pairFound = true;
+            } else if (count !== 1) {
+                return false;
+            }
+        }
+        return pairFound;
+    }
+
+    function isChiitoi(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const counts = Object.values(tileCounts);
+        return counts.length === 7 && counts.every(count => count === 2);
+    }
+
+    function isSuuankou(hand, winningTile, winType) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const triplets = Object.values(tileCounts).filter(count => count >= 3);
+        if (triplets.length !== 4) return false;
+        
+        // ロンあがりの場合、アガリ牌が刻子の一部でないことを確認
+        if (winType === 'ron') {
+            const winTileCount = tileCounts[winningTile] || 0;
+            return winTileCount !== 3; // 単騎待ちの場合のみ四暗刻成立
+        }
+        
+        return true;
+    }
+
+    function isDaisangen(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const sangenTiles = ['5z', '6z', '7z']; // 白、発、中
+        return sangenTiles.every(tile => (tileCounts[tile] || 0) >= 3);
+    }
+
+    function isShousangen(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const sangenTiles = ['5z', '6z', '7z'];
+        const tripletCount = sangenTiles.filter(tile => (tileCounts[tile] || 0) >= 3).length;
+        const pairCount = sangenTiles.filter(tile => (tileCounts[tile] || 0) === 2).length;
+        
+        return tripletCount === 2 && pairCount === 1;
+    }
+
+    function isSuushiihou(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const windTiles = ['1z', '2z', '3z', '4z']; // 東南西北
+        return windTiles.every(tile => (tileCounts[tile] || 0) >= 3);
+    }
+
+    function isShousuushii(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const windTiles = ['1z', '2z', '3z', '4z'];
+        const tripletCount = windTiles.filter(tile => (tileCounts[tile] || 0) >= 3).length;
+        const pairCount = windTiles.filter(tile => (tileCounts[tile] || 0) === 2).length;
+        
+        return tripletCount === 3 && pairCount === 1;
+    }
+
+    function isChinroutou(hand) {
+        const terminalTiles = ['1m', '9m', '1p', '9p', '1s', '9s'];
+        return hand.every(tile => terminalTiles.includes(tile));
+    }
+
+    function isRyuuiisou(hand) {
+        const greenTiles = ['2s', '3s', '4s', '6s', '8s', '6z']; // 緑一色
+        return hand.every(tile => greenTiles.includes(tile));
+    }
+
+    function isChuuren(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        // 一色でなければならない
+        const suits = new Set(hand.map(tile => tile.slice(-1)));
+        if (suits.size !== 1 || suits.has('z')) return false;
+        
+        const suit = Array.from(suits)[0];
+        const pattern = [3, 1, 1, 1, 1, 1, 1, 1, 3]; // 1112345678999の形
+        
+        for (let i = 1; i <= 9; i++) {
+            const tile = i + suit;
+            const expected = pattern[i - 1];
+            const actual = tileCounts[tile] || 0;
+            if (actual !== expected) return false;
+        }
+        
+        return true;
+    }
+
+    function isSuukantsu(hand, nakiMelds) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const kantsuCount = Object.values(tileCounts).filter(count => count >= 4).length +
+                         nakiMelds.filter(meld => meld.type === 'kan').length;
+        
+        return kantsuCount === 4;
+    }
+
+    function isSanankou(hand, winningTile, winType, hasNaki) {
+        if (hasNaki) return false;
+        
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        let ankouCount = 0;
+        Object.entries(tileCounts).forEach(([tile, count]) => {
+            if (count >= 3) {
+                // ロンあがりでアガリ牌が刻子の一部の場合は明刻扱い
+                if (winType === 'ron' && tile === winningTile) {
+                    return; // この刻子は暗刻としてカウントしない
+                }
+                ankouCount++;
+            }
+        });
+        
+        return ankouCount === 3;
+    }
+
+    function isSanshokudoukou(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        for (let i = 1; i <= 9; i++) {
+            const manzu = i + 'm';
+            const pinzu = i + 'p';
+            const souzu = i + 's';
+            
+            if ((tileCounts[manzu] || 0) >= 3 && 
+                (tileCounts[pinzu] || 0) >= 3 && 
+                (tileCounts[souzu] || 0) >= 3) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isSankantsu(hand, nakiMelds) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const kantsuCount = Object.values(tileCounts).filter(count => count >= 4).length +
+                         nakiMelds.filter(meld => meld.type === 'kan').length;
+        
+        return kantsuCount === 3;
+    }
+
+    function isHonroutou(hand) {
+        const terminalAndHonorTiles = ['1m', '9m', '1p', '9p', '1s', '9s', '1z', '2z', '3z', '4z', '5z', '6z', '7z'];
+        return hand.every(tile => terminalAndHonorTiles.includes(tile)) && 
+               hand.some(tile => tile.endsWith('z')); // 字牌が含まれている
+    }
+
+    function isChanta(hand, melds) {
+        const isTerminalOrHonor = (tile) => {
+            if (tile.endsWith('z')) return true;
+            const num = parseInt(tile);
+            return num === 1 || num === 9;
+        };
+        
+        // 字牌が含まれていることを確認
+        const hasHonorTiles = hand.some(tile => tile.endsWith('z'));
+        if (!hasHonorTiles) return false;
+        
+        // 全ての牌が么九牌であるかチェック
+        const terminalCount = hand.filter(tile => {
+            if (tile.endsWith('z')) return true;
+            const num = parseInt(tile);
+            return num === 1 || num === 9;
+        }).length;
+        
+        // 少なくとも一部の牌が么九牌である必要
+        return terminalCount > 0 && hand.some(tile => !isTerminalOrHonor(tile));
+    }
+
+    function isJunchanta(hand, melds) {
+        const isTerminal = (tile) => {
+            if (tile.endsWith('z')) return false; // 字牌は含まない
+            const num = parseInt(tile);
+            return num === 1 || num === 9;
+        };
+        
+        // 字牌が含まれていないことを確認
+        const hasHonorTiles = hand.some(tile => tile.endsWith('z'));
+        if (hasHonorTiles) return false;
+        
+        // 端牌が含まれているかチェック
+        const terminalCount = hand.filter(tile => isTerminal(tile)).length;
+        
+        // 端牌が含まれ、かつ中張牌も含まれている必要
+        return terminalCount > 0 && hand.some(tile => !isTerminal(tile) && !tile.endsWith('z'));
+    }
+
+    function isTanyao(hand) {
+        return hand.every(tile => {
+            if (tile.endsWith('z')) return false;
+            const num = parseInt(tile);
+            return num >= 2 && num <= 8;
+        });
+    }
+
+    function isPinfu(hand, winningTile, melds) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        // 字牌の刻子がないか
+        for (const [tile, count] of Object.entries(tileCounts)) {
+            if (tile.endsWith('z') && count >= 3) return false;
+        }
+        
+        // 雀頭が役牌でないか
+        for (const [tile, count] of Object.entries(tileCounts)) {
+            if (count === 2 && tile.endsWith('z')) {
+                const jihaiNum = parseInt(tile);
+                if (jihaiNum >= 5) return false; // 三元牌
+            }
+        }
+        
+        // 全て順子であるか（簡易判定）
+        const tripletCount = Object.values(tileCounts).filter(count => count >= 3).length;
+        return tripletCount === 0;
+    }
+
+    function isIipeikou(hand) {
+        const sequences = findSequences(hand);
+        const sequencePatterns = {};
+        
+        sequences.forEach(seq => {
+            const pattern = seq.tiles.join('');
+            sequencePatterns[pattern] = (sequencePatterns[pattern] || 0) + 1;
+        });
+        
+        return Object.values(sequencePatterns).some(count => count >= 2);
+    }
+
+    function isRyanpeikou(hand) {
+        const sequences = findSequences(hand);
+        const sequencePatterns = {};
+        
+        sequences.forEach(seq => {
+            const pattern = seq.tiles.join('');
+            sequencePatterns[pattern] = (sequencePatterns[pattern] || 0) + 1;
+        });
+        
+        const pairs = Object.values(sequencePatterns).filter(count => count >= 2);
+        return pairs.length >= 2;
+    }
+
+    function isSanshoku(hand, melds) {
+        const sequences = melds.sequences;
+        
+        for (let i = 1; i <= 7; i++) {
+            const manzuSeq = sequences.find(seq => seq.suit === 'm' && seq.start === i);
+            const pinzuSeq = sequences.find(seq => seq.suit === 'p' && seq.start === i);
+            const souzuSeq = sequences.find(seq => seq.suit === 's' && seq.start === i);
+            
+            if (manzuSeq && pinzuSeq && souzuSeq) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isIttsu(hand, melds) {
+        const sequences = melds.sequences;
+        
+        for (const suit of ['m', 'p', 's']) {
+            const seq123 = sequences.find(seq => seq.suit === suit && seq.start === 1);
+            const seq456 = sequences.find(seq => seq.suit === suit && seq.start === 4);
+            const seq789 = sequences.find(seq => seq.suit === suit && seq.start === 7);
+            
+            if (seq123 && seq456 && seq789) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function findSequences(hand) {
+        const tileCounts = {};
+        hand.forEach(tile => {
+            tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+        });
+        
+        const sequences = [];
+        
+        ['m', 'p', 's'].forEach(suit => {
+            for (let i = 1; i <= 7; i++) {
+                const tile1 = i + suit;
+                const tile2 = (i + 1) + suit;
+                const tile3 = (i + 2) + suit;
+                
+                const count = Math.min(
+                    tileCounts[tile1] || 0,
+                    tileCounts[tile2] || 0,
+                    tileCounts[tile3] || 0
+                );
+                
+                for (let j = 0; j < count; j++) {
+                    sequences.push({
+                        type: 'sequence',
+                        tiles: [tile1, tile2, tile3],
+                        suit: suit,
+                        start: i
+                    });
+                }
+            }
+        });
+        
+        return sequences;
+    }
+
+    // 符計算（完全版）
+    function calculateFuComplete(hand, winningTile, winType, position, nakiMelds, detectedYaku) {
+        let fuBreakdown = [];
+        let totalFu = 20; // 基本符
+        fuBreakdown.push({ item: '基本符', fu: 20 });
+
+        // ピンフツモの場合は20符
+        if (detectedYaku.some(y => y.name === 'ピンフ') && winType === 'tsumo') {
+            return { totalFu: 20, fuBreakdown };
+        }
+
+        // 七対子の場合は25符
+        if (detectedYaku.some(y => y.name === '七対子')) {
+            return { totalFu: 25, fuBreakdown: [{ item: '七対子', fu: 25 }] };
+        }
+
+        const analysis = analyzeMeldsAdvanced(hand);
+        const tileCounts = analysis.tileCounts;
+
+        // 雀頭の符
+        const pairs = Object.entries(tileCounts).filter(([tile, count]) => count >= 2);
+        if (pairs.length > 0) {
+            const [pairTile] = pairs[0];
+            if (pairTile.endsWith('z')) {
+                const jihaiNum = parseInt(pairTile);
+                if (jihaiNum >= 5) { // 三元牌
+                    totalFu += 2;
+                    fuBreakdown.push({ item: '役牌雀頭', fu: 2 });
+                }
+            }
+        }
+
+        // 面子の符
+        Object.entries(tileCounts).forEach(([tile, count]) => {
+            if (count >= 3) {
+                const isTerminal = tile.startsWith('1') || tile.startsWith('9') || tile.endsWith('z');
+                const isConcealed = !nakiMelds.some(meld => meld.tiles.includes(tile));
+                
+                let fu = 2; // 中張牌明刻
+                if (isTerminal) fu *= 2; // 么九牌
+                if (isConcealed) fu *= 2; // 暗刻
+                if (count >= 4) fu *= 4; // 槓子
+                
+                totalFu += fu;
+                const meldType = count >= 4 ? '槓' : '刻';
+                const concealment = isConcealed ? '暗' : '明';
+                const terminalType = isTerminal ? '么九' : '中張';
+                fuBreakdown.push({ item: `${tileNames[tile]}${concealment}${meldType}(${terminalType})`, fu: fu });
+            }
+        });
+
+        // あがり方の符
+        if (winType === 'tsumo') {
+            totalFu += 2;
+            fuBreakdown.push({ item: 'ツモ', fu: 2 });
+        }
+
+        // 待ちの符（詳細判定）
+        const waitFu = calculateWaitFu(hand, winningTile);
+        if (waitFu > 0) {
+            totalFu += waitFu;
+            fuBreakdown.push({ item: '待ち', fu: waitFu });
+        }
+
+        // 符の切り上げ
+        totalFu = Math.ceil(totalFu / 10) * 10;
+        
+        return { totalFu, fuBreakdown };
+    }
+
+    // 待ちの符計算
+    function calculateWaitFu(hand, winningTile) {
+        // 簡易版：単騎待ち、辺張待ち、嵌張待ちを2符とする
+        return 2;
+    }
+
+    // 点数計算（完全版）
+    function calculateScoreComplete(han, fu, position, winType) {
+        // 役満の場合
+        if (han >= 13) {
+            const yakumanCount = Math.floor(han / 13);
+            const baseScores = specialScores.yakuman;
+            const scores = baseScores.map(score => score * yakumanCount);
+            return {
+                type: yakumanCount === 1 ? '役満' : `${yakumanCount}倍役満`,
+                scores: scores
+            };
+        }
+
+        // 満貫以上の判定
+        if (han >= 11) {
+            return { type: '三倍満', scores: specialScores.sanbaiman };
+        } else if (han >= 8) {
+            return { type: '倍満', scores: specialScores.baiman };
+        } else if (han >= 6) {
+            return { type: '跳満', scores: specialScores.haneman };
+        } else if (han >= 5 || (han >= 3 && fu >= 70) || (han >= 4 && fu >= 40)) {
+            return { type: '満貫', scores: specialScores.mangan };
+        }
+
+        // 通常の点数表から取得
+        if (scoreTable[han] && scoreTable[han][fu]) {
+            return {
+                type: `${han}翻${fu}符`,
+                scores: scoreTable[han][fu]
+            };
+        }
+
+        // 計算式による算出
+        const baseScore = fu * Math.pow(2, han + 2);
+        let koRon = Math.ceil(baseScore / 100) * 100;
+        let koTsumoOya = Math.ceil(baseScore / 200) * 100;
+        let koTsumoKo = Math.ceil(baseScore / 400) * 100;
+        let oyaRon = Math.ceil(baseScore * 1.5 / 100) * 100;
+        let oyaTsumo = Math.ceil(baseScore / 100) * 100;
+
+        // 上限チェック
+        if (koRon >= 8000) koRon = 8000;
+        if (oyaRon >= 12000) oyaRon = 12000;
+
+        return {
+            type: `${han}翻${fu}符`,
+            scores: [koRon, koTsumoOya, koTsumoKo, oyaRon, oyaTsumo]
+        };
+    }
+
+    // メイン計算関数
+    function calculateAll() {
+        try {
+            if (hand.length + nakiMelds.reduce((sum, meld) => sum + meld.tiles.length, 0) !== 14) {
+                throw new Error('手牌と鳴きを合わせて14枚にしてください');
+            }
+
+            if (!winningTile) {
+                throw new Error('アガリ牌を設定してください');
+            }
+
+            const position = document.getElementById('position').value;
+            const winType = document.getElementById('winType').value;
+            const bakaze = document.getElementById('bakaze').value;
+            const jikaze = document.getElementById('jikaze').value;
+            const dora = parseInt(document.getElementById('dora').value);
+            const uradora = parseInt(document.getElementById('uradora').value);
+            const riichi = document.getElementById('riichi').checked;
+            const ippatsu = document.getElementById('ippatsu').checked;
+            const haitei = document.getElementById('haitei').checked;
+            const rinshan = document.getElementById('rinshan').checked;
+
+            const settings = { bakaze, jikaze, riichi, ippatsu, haitei, rinshan };
+
+            // 役の判定
+            const detectedYaku = detectYakuComplete(hand, winningTile, winType, nakiMelds, settings);
+            
+            // 符計算
+            const fuResult = calculateFuComplete(hand, winningTile, winType, position, nakiMelds, detectedYaku);
+            
+            // 翻数計算
+            let totalHan = detectedYaku.reduce((sum, yaku) => sum + yaku.han, 0) + dora + uradora;
+
+            // 点数計算
+            const scoreResult = calculateScoreComplete(totalHan, fuResult.totalFu, position, winType);
+
+            // 結果表示
+            displayCompleteResults(scoreResult, detectedYaku, totalHan, fuResult, dora, uradora, position, winType);
+
+        } catch (error) {
+            displayError(error.message);
+        }
+    }
+
+    // 完全結果表示
+    function displayCompleteResults(scoreResult, detectedYaku, totalHan, fuResult, dora, uradora, position, winType) {
+        const resultDisplay = document.getElementById('resultDisplay');
+        const scores = scoreResult.scores;
+        
+        let scoreText, paymentText;
+        
+        if (position === 'oya') {
+            if (winType === 'tsumo') {
+                scoreText = `${scores[4]}点`;
+                paymentText = `ツモ: 子${scores[4]}点オール`;
+            } else {
+                scoreText = `${scores[3]}点`;
+                paymentText = `ロン: ${scores[3]}点`;
+            }
+        } else {
+            if (winType === 'tsumo') {
+                scoreText = `${scores[1]}・${scores[2]}点`;
+                paymentText = `ツモ: 親${scores[1]}点・子${scores[2]}点`;
+            } else {
+                scoreText = `${scores[0]}点`;
+                paymentText = `ロン: ${scores[0]}点`;
+            }
+        }
+
+        // 手牌分析表示
+        const handDisplay = hand.map(tile => tileNames[tile]).join(' ');
+        const nakiDisplay = nakiMelds.map(meld => meld.display).join(' ');
+
+        // 役リスト
+        const yakuListHtml = detectedYaku.map(yaku => 
+            `<div class="yaku-item"><span>${yaku.name}</span><span>${yaku.han === 13 ? '役満' : yaku.han + '翻'}</span></div>`
+        ).join('');
+
+        // 符の内訳表示
+        const fuBreakdownHtml = fuResult.fuBreakdown.map(item => 
+            `<div class="fu-item"><span>${item.item}</span><span>${item.fu}符</span></div>`
+        ).join('');
+
+        resultDisplay.innerHTML = `
+            <div class="score-display">${scoreText}</div>
+            
+            <div class="hand-analysis">
+                <h4>🀄 手牌分析</h4>
+                <div><strong>手牌:</strong> ${handDisplay}</div>
+                <div><strong>アガリ牌:</strong> ${winningTile ? tileNames[winningTile] : 'なし'}</div>
+                ${nakiDisplay ? `<div><strong>鳴き:</strong> ${nakiDisplay}</div>` : ''}
+            </div>
+
+            <div class="yaku-list">
+                <h4>🏆 成立役 (${totalHan}翻)</h4>
+                ${yakuListHtml}
+                ${dora > 0 ? `<div class="yaku-item"><span>ドラ</span><span>${dora}翻</span></div>` : ''}
+                ${uradora > 0 ? `<div class="yaku-item"><span>裏ドラ</span><span>${uradora}翻</span></div>` : ''}
+            </div>
+
+            <div class="fu-breakdown">
+                <h4>📊 符の内訳</h4>
+                ${fuBreakdownHtml}
+                <div class="fu-item"><span><strong>合計</strong></span><span><strong>${fuResult.totalFu}符</strong></span></div>
+            </div>
+
+            <div class="details">
+                <div><strong>🎯 ${scoreResult.type}</strong></div>
+                <div><strong>💰 支払い:</strong> ${paymentText}</div>
+                <div><strong>👤 局:</strong> ${position === 'oya' ? '親' : '子'}${winType === 'tsumo' ? 'ツモ' : 'ロン'}</div>
+            </div>
+        `;
+    }
+
+    // エラー表示
+    function displayError(message) {
+        const resultDisplay = document.getElementById('resultDisplay');
+        resultDisplay.innerHTML = `
+            <div class="error">
+                <strong>⚠️ エラー:</strong> ${message}
+            </div>
+        `;
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        generateTileGrids();
+    });
+</script>
+```
+
+</body>
+</html>
