@@ -17,7 +17,7 @@
         font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         min-height: 100vh;
-        padding: 10px;
+        padding: 0;
     }
 
     .container {
@@ -47,6 +47,7 @@
         grid-template-columns: 2fr 1fr;
         gap: 20px;
         padding: 20px;
+        margin-top: 120px;
     }
 
     .input-section, .result-section {
@@ -156,9 +157,9 @@
         gap: 4px;
         min-height: 60px;
         padding: 10px;
-        background: white;
+        background: rgba(255,255,255,0.1);
         border-radius: 8px;
-        border: 2px dashed #ddd;
+        border: 2px dashed rgba(255,255,255,0.3);
         align-items: center;
     }
 
@@ -399,7 +400,7 @@
         padding: 10px;
         margin: 10px 0;
         position: sticky;
-        top: 120px;
+        top: 140px;
         z-index: 900;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
@@ -437,28 +438,26 @@
             grid-template-columns: 1fr;
             gap: 15px;
             padding: 15px;
+            margin-top: 110px;
         }
         
         .hand-display {
-            position: sticky;
+            position: fixed;
             top: 0;
-            margin: 0 -15px 15px -15px;
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
+            left: 0;
+            right: 0;
+            width: 100%;
+            margin: 0;
+            padding: 12px;
         }
         
         .naki-settings {
             position: sticky;
-            top: 100px;
+            top: 120px;
         }
     }
 
     @media (max-width: 768px) {
-        .header h1 {
-            font-size: 1.8em;
-        }
-
         .tile-grid {
             grid-template-columns: repeat(auto-fit, minmax(35px, 1fr));
         }
@@ -473,28 +472,32 @@
             grid-template-columns: 1fr;
         }
         
+        .main-content {
+            margin-top: 100px;
+            padding: 10px;
+        }
+        
         .hand-display {
-            position: sticky;
+            position: fixed;
             top: 0;
-            padding: 10px 15px;
-            margin: 0 -10px 15px -10px;
-            border-radius: 0;
-            border-left: none;
-            border-right: none;
-            border-top: none;
+            left: 0;
+            right: 0;
+            width: 100%;
+            padding: 10px;
+            margin: 0;
         }
         
         .hand-display h3 {
-            font-size: 14px;
+            font-size: 16px;
         }
         
         .hand-status {
-            font-size: 10px;
+            font-size: 11px;
         }
         
         .naki-settings {
             position: sticky;
-            top: 80px;
+            top: 110px;
         }
     }
 </style>
@@ -503,9 +506,15 @@
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>🀄 麻雀点数・符計算アプリ【フル機能版】</h1>
-            <p>完全な役判定・符計算・点数計算システム</p>
+        <div class="hand-display">
+            <h3>
+                🀄 手牌 
+                <span class="hand-status">
+                    <span id="handCount">0</span>/14枚
+                    <span id="winningTileStatus"></span>
+                </span>
+            </h3>
+            <div class="hand-tiles" id="handTiles"></div>
         </div>
 
 ```
@@ -525,17 +534,6 @@
                 
                 <h3 style="font-size: 14px; margin: 10px 0 5px 0;">字牌</h3>
                 <div class="tile-grid" id="jihaiGrid"></div>
-            </div>
-
-            <div class="hand-display">
-                <h3>
-                    手牌 
-                    <span class="hand-status">
-                        <span id="handCount">0</span>/14枚
-                        <span id="winningTileStatus"></span>
-                    </span>
-                </h3>
-                <div class="hand-tiles" id="handTiles"></div>
             </div>
 
             <div class="action-buttons">
