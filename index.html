@@ -1052,7 +1052,7 @@ function detectYakuComplete(hand, winningTile, winType, nakiMelds, settings) {
     }
 
     // ピンフ
-    if (isPinfu(hand, winningTile, melds) && !hasNaki) {
+    if (isPinfu(hand, winningTile, nakiMelds) && !hasNaki) {
         detectedYaku.push({ name: 'ピンフ', han: 1 });
     }
 
@@ -1364,19 +1364,23 @@ function isPinfu(hand, winningTile, melds) {
         tileCounts[tile] = (tileCounts[tile] || 0) + 1;
     });
     
-    for (const [tile, count] of Object.entries(tileCounts)) {
-        if (tile.endsWith('z') && count >= 3) return false;
-    }
-    
-    for (const [tile, count] of Object.entries(tileCounts)) {
-        if (count === 2 && tile.endsWith('z')) {
-            const jihaiNum = parseInt(tile);
-            if (jihaiNum >= 5) return false;
-        }
-    }
-    
+    // 刻子がないことを確認
     const tripletCount = Object.values(tileCounts).filter(count => count >= 3).length;
-    return tripletCount === 0;
+    if (tripletCount > 0) return false;
+    
+    // 雀頭が役牌でないことを確認
+    const pairs = Object.entries(tileCounts).filter(([tile, count]) => count === 2);
+    if (pairs.length !== 1) return false;
+    
+    const pairTile = pairs[0][0];
+    if (pairTile.endsWith('z')) {
+        const jihaiNum = parseInt(pairTile);
+        // 三元牌（5z=白, 6z=發, 7z=中）は役牌
+        if (jihaiNum >= 5) return false;
+    }
+    
+    // 全て順子で構成されていることを確認（簡易実装）
+    return hand.every(tile => !tile.endsWith('z'));
 }
 
 function isIipeikou(hand) {
