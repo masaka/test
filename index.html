@@ -675,6 +675,7 @@ const scoreTable = {
         70: [8000, 4000, 2000, 12000, 4000]
     },
     4: {
+        20: [5200, 2600, 1300, 7700, 2600],
         25: [6400, 3200, 1600, 9600, 3200],
         30: [7700, 3900, 2000, 11600, 3900],
         40: [8000, 4000, 2000, 12000, 4000]
@@ -1615,6 +1616,16 @@ function calculateFuComplete(hand, winningTile, winType, position, nakiMelds, de
 
     if (detectedYaku.some(y => y.name === '七対子')) {
         return { totalFu: 25, fuBreakdown: [{ item: '七対子', fu: 25 }] };
+    }
+
+    // ピンフの特殊処理
+    const isPinfuHand = detectedYaku.some(y => y.name === 'ピンフ');
+    if (isPinfuHand) {
+        if (winType === 'tsumo') {
+            return { totalFu: 20, fuBreakdown: [{ item: 'ピンフツモ', fu: 20 }] };
+        } else {
+            return { totalFu: 30, fuBreakdown: [{ item: 'ピンフロン', fu: 30 }] };
+        }
     }
 
     const analysis = analyzeMeldsAdvanced(hand);
