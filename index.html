@@ -1405,24 +1405,25 @@ function isRyanpeikou(hand) {
 }
 
 function isSanshoku(hand) {
-    // 手牌の牌数をカウント
-    const tileCounts = {};
-    hand.forEach(tile => {
-        tileCounts[tile] = (tileCounts[tile] || 0) + 1;
-    });
+    // 和了形の解析を行う
+    const analysis = analyzeWinningHand(hand);
+    if (!analysis.isValid) return false;
     
-    // 各数字で三色の順子が成立するかチェック
+    const sequences = analysis.sequences;
+    
+    // 同じ開始数字の順子が3色揃っているかチェック
     for (let i = 1; i <= 7; i++) {
-        const manzu = [`${i}m`, `${i+1}m`, `${i+2}m`];
-        const pinzu = [`${i}p`, `${i+1}p`, `${i+2}p`];
-        const souzu = [`${i}s`, `${i+1}s`, `${i+2}s`];
+        let manzuCount = 0, pinzuCount = 0, souzuCount = 0;
         
-        // 各色で順子が作れるかチェック
-        const manzuOk = manzu.every(tile => (tileCounts[tile] || 0) >= 1);
-        const pinzuOk = pinzu.every(tile => (tileCounts[tile] || 0) >= 1);
-        const souzuOk = souzu.every(tile => (tileCounts[tile] || 0) >= 1);
+        sequences.forEach(seq => {
+            if (seq.start === i) {
+                if (seq.suit === 'm') manzuCount++;
+                else if (seq.suit === 'p') pinzuCount++;
+                else if (seq.suit === 's') souzuCount++;
+            }
+        });
         
-        if (manzuOk && pinzuOk && souzuOk) {
+        if (manzuCount >= 1 && pinzuCount >= 1 && souzuCount >= 1) {
             return true;
         }
     }
