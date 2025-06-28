@@ -1034,11 +1034,11 @@ function detectYakuComplete(hand, winningTile, winType, nakiMelds, settings) {
         detectedYaku.push({ name: '一盃口', han: 1 });
     }
 
-    // 三色同順（現在無効化）
-    // if (isSanshoku(hand, melds)) {
-    //     const hanValue = hasNaki ? 1 : 2;
-    //     detectedYaku.push({ name: '三色同順', han: hanValue });
-    // }
+    // 三色同順
+    if (isSanshoku(hand)) {
+        const hanValue = hasNaki ? 1 : 2;
+        detectedYaku.push({ name: '三色同順', han: hanValue });
+    }
 
     // 一気通貫
     if (isIttsu(hand, melds)) {
@@ -1054,6 +1054,44 @@ function detectYakuComplete(hand, winningTile, winType, nakiMelds, settings) {
     // ピンフ
     if (isPinfu(hand, winningTile, melds) && !hasNaki) {
         detectedYaku.push({ name: 'ピンフ', han: 1 });
+    }
+
+    // 断么九（タンヤオ）
+    if (isTanyao(hand) && !hasNaki) {
+        // 既にタンヤオが追加されている場合は重複しない
+    }
+
+    // ドラ以外の追加役
+    
+    // 赤ドラ（5の赤牌がある場合）
+    const redDora = countRedDora(hand);
+    if (redDora > 0) {
+        detectedYaku.push({ name: '赤ドラ', han: redDora });
+    }
+
+    // 天和・地和（特殊条件）
+    if (settings.tenhou) {
+        detectedYaku.push({ name: '天和', han: 13 });
+        return detectedYaku;
+    }
+    if (settings.chiihou) {
+        detectedYaku.push({ name: '地和', han: 13 });
+        return detectedYaku;
+    }
+
+    // 人和（特殊条件）
+    if (settings.renhou) {
+        detectedYaku.push({ name: '人和', han: 5 });
+    }
+
+    // ダブルリーチ
+    if (settings.doubleRiichi) {
+        detectedYaku.push({ name: 'ダブルリーチ', han: 2 });
+    }
+
+    // 槍槓
+    if (settings.chankan) {
+        detectedYaku.push({ name: '槍槓', han: 1 });
     }
 
     return detectedYaku;
@@ -1361,23 +1399,27 @@ function isRyanpeikou(hand) {
     return pairs.length >= 2;
 }
 
-function isSanshoku(hand, melds) {
-    // 和了形として成立する順子の組み合わせを取得
-    const validCombinations = findValidHandCombinations(hand);
+function isSanshoku(hand) {
+    // 和了形の解析を行う
+    const analysis = analyzeWinningHand(hand);
+    if (!analysis.isValid) return false;
     
-    // 各有効な組み合わせで三色同順をチェック
-    for (const combination of validCombinations) {
-        const sequences = combination.filter(meld => meld.type === 'sequence');
+    const sequences = analysis.sequences;
+    
+    // 同じ開始数字の順子が3色揃っているかチェック
+    for (let i = 1; i <= 7; i++) {
+        let manzuCount = 0, pinzuCount = 0, souzuCount = 0;
         
-        // 同じ開始数字の順子が3色揃っているかチェック
-        for (let i = 1; i <= 7; i++) {
-            const manzuSeq = sequences.find(seq => seq.suit === 'm' && seq.start === i);
-            const pinzuSeq = sequences.find(seq => seq.suit === 'p' && seq.start === i);
-            const souzuSeq = sequences.find(seq => seq.suit === 's' && seq.start === i);
-            
-            if (manzuSeq && pinzuSeq && souzuSeq) {
-                return true;
+        sequences.forEach(seq => {
+            if (seq.start === i) {
+                if (seq.suit === 'm') manzuCount++;
+                else if (seq.suit === 'p') pinzuCount++;
+                else if (seq.suit === 's') souzuCount++;
             }
+        });
+        
+        if (manzuCount >= 1 && pinzuCount >= 1 && souzuCount >= 1) {
+            return true;
         }
     }
     return false;
@@ -1430,6 +1472,131 @@ function findSequences(hand) {
     });
     
     return sequences;
+}
+
+// 和了形解析関数
+function analyzeWinningHand(hand) {
+    const tileCounts = {};
+    hand.forEach(tile => {
+        tileCounts[tile] = (tileCounts[tile] || 0) + 1;
+    });
+
+    // 七対子の判定
+    if (isChiitoi(hand)) {
+        return { isValid: true, type: 'chiitoi', sequences: [], triplets: [], pair: null };
+    }
+
+    // 国士無双の判定
+    if (isKokushi(hand)) {
+        return { isValid: true, type: 'kokushi', sequences: [], triplets: [], pair: null };
+    }
+
+    // 通常形の解析
+    const sequences = [];
+    const triplets = [];
+    let pair = null;
+
+    // 面子を取り除いて解析
+    const remainingTiles = { ...tileCounts };
+
+    // 刻子を検出
+    Object.entries(remainingTiles).forEach(([tile, count]) => {
+        if (count >= 3) {
+            const tripletCount = Math.floor(count / 3);
+            for (let i = 0; i < tripletCount; i++) {
+                triplets.push({ type: 'triplet', tile: tile });
+            }
+            remainingTiles[tile] = count % 3;
+        }
+    });
+
+    // 順子を検出
+    ['m', 'p', 's'].forEach(suit => {
+        for (let i = 1; i <= 7; i++) {
+            const tile1 = i + suit;
+            const tile2 = (i + 1) + suit;
+            const tile3 = (i + 2) + suit;
+            
+            while ((remainingTiles[tile1] || 0) >= 1 && 
+                   (remainingTiles[tile2] || 0) >= 1 && 
+                   (remainingTiles[tile3] || 0) >= 1) {
+                sequences.push({
+                    type: 'sequence',
+                    tiles: [tile1, tile2, tile3],
+                    suit: suit,
+                    start: i
+                });
+                remainingTiles[tile1]--;
+                remainingTiles[tile2]--;
+                remainingTiles[tile3]--;
+            }
+        }
+    });
+
+    // 対子を検出
+    Object.entries(remainingTiles).forEach(([tile, count]) => {
+        if (count === 2 && !pair) {
+            pair = { type: 'pair', tile: tile };
+            remainingTiles[tile] = 0;
+        }
+    });
+
+    // 残った牌があるかチェック
+    const hasRemaining = Object.values(remainingTiles).some(count => count > 0);
+    const totalMelds = sequences.length + triplets.length;
+    const isValid = !hasRemaining && totalMelds === 4 && pair !== null;
+
+    return { isValid, sequences, triplets, pair };
+}
+
+// 赤ドラを数える関数
+function countRedDora(hand) {
+    // 赤ドラは通常5の牌に含まれる（実装では5rのような表記を使うことが多いが、ここでは簡略化）
+    return 0; // 現在の実装では赤ドラは考慮しない
+}
+
+// 追加の役判定関数
+
+// 流し満貫
+function isNagashiMangan(hand) {
+    const terminalAndHonorTiles = ['1m', '9m', '1p', '9p', '1s', '9s', '1z', '2z', '3z', '4z', '5z', '6z', '7z'];
+    return hand.every(tile => terminalAndHonorTiles.includes(tile));
+}
+
+// ツモ役（既に実装済み）
+
+// 平和の詳細判定を修正
+function isPinfuDetailed(hand, winningTile, settings) {
+    const analysis = analyzeWinningHand(hand);
+    if (!analysis.isValid || analysis.triplets.length > 0) return false;
+    
+    // 雀頭が役牌でないことを確認
+    if (analysis.pair) {
+        const pairTile = analysis.pair.tile;
+        if (pairTile.endsWith('z')) {
+            const jihaiNum = parseInt(pairTile);
+            // 役牌（白發中、場風、自風）でないことを確認
+            if (jihaiNum >= 5 || pairTile === settings.bakaze || pairTile === settings.jikaze) {
+                return false;
+            }
+        }
+    }
+    
+    // 両面待ちかどうかを確認（簡略化）
+    // 実際の実装では、アガリ牌が順子の真ん中に入るかどうかを詳細にチェックする必要がある
+    return true;
+}
+
+// 混一色の詳細判定
+function isHonitsuDetailed(hand) {
+    const suits = new Set(hand.map(tile => tile.slice(-1)));
+    return suits.size === 2 && suits.has('z');
+}
+
+// 清一色の詳細判定
+function isChinitsuDetailed(hand) {
+    const suits = new Set(hand.map(tile => tile.slice(-1)));
+    return suits.size === 1 && !suits.has('z');
 }
 
 function calculateFuComplete(hand, winningTile, winType, position, nakiMelds, detectedYaku) {
