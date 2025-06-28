@@ -1328,16 +1328,23 @@ function isHonroutou(hand) {
 }
 
 function isChanta(hand, melds) {
-    const terminalAndHonorTiles = hand.filter(tile => {
+    const isTerminalOrHonor = (tile) => {
         if (tile.endsWith('z')) return true;
         const num = parseInt(tile);
         return num === 1 || num === 9;
-    });
+    };
     
     const hasHonorTiles = hand.some(tile => tile.endsWith('z'));
     if (!hasHonorTiles) return false;
     
-    return terminalAndHonorTiles.length >= 5;
+    const winningPatterns = findWinningPatterns(hand);
+    if (winningPatterns.length === 0) return false;
+    
+    return winningPatterns.some(pattern => {
+        return pattern.every(group => 
+            group.every(tile => isTerminalOrHonor(tile))
+        );
+    });
 }
 
 function isJunchanta(hand, melds) {
