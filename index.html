@@ -1337,14 +1337,12 @@ function isChanta(hand, melds) {
     const hasHonorTiles = hand.some(tile => tile.endsWith('z'));
     if (!hasHonorTiles) return false;
     
-    const winningPatterns = findWinningPatterns(hand);
-    if (winningPatterns.length === 0) return false;
+    // 簡易実装：手牌の大部分が么九牌であることを確認
+    const terminalOrHonorCount = hand.filter(isTerminalOrHonor).length;
+    const hasMiddleTiles = hand.some(tile => !isTerminalOrHonor(tile));
     
-    return winningPatterns.some(pattern => {
-        return pattern.every(group => 
-            group.every(tile => isTerminalOrHonor(tile))
-        );
-    });
+    // 混全は么九牌が多く、中張牌も含む必要がある
+    return terminalOrHonorCount >= 8 && hasMiddleTiles;
 }
 
 function isJunchanta(hand, melds) {
